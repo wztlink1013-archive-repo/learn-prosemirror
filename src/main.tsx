@@ -1,5 +1,8 @@
 import './index.css';
 
+import React from 'react';
+import ReactDOM from 'react-dom';
+
 import { MenuItem } from 'prosemirror-menu';
 import { DOMParser, Schema } from 'prosemirror-model';
 import { DOMOutputSpec, MarkSpec, NodeSpec } from 'prosemirror-model';
@@ -7,8 +10,6 @@ import { addListNodes } from 'prosemirror-schema-list';
 import { EditorState } from 'prosemirror-state';
 import { findWrapping } from 'prosemirror-transform';
 import { EditorView } from 'prosemirror-view';
-import React from 'react';
-import ReactDOM from 'react-dom';
 
 import { buildMenuItems, exampleSetup } from './basic';
 
@@ -73,8 +74,7 @@ const schema = new Schema({
         return pDOM;
       },
     } as NodeSpec,
-
-    /// A blockquote (`<blockquote>`) wrapping one or more blocks.
+    // 引用
     blockquote: {
       content: 'block+',
       group: 'block',
@@ -84,8 +84,7 @@ const schema = new Schema({
         return blockquoteDOM;
       },
     } as NodeSpec,
-
-    /// A horizontal rule (`<hr>`).
+    // 分割线
     horizontal_rule: {
       group: 'block',
       parseDOM: [{ tag: 'hr' }],
@@ -93,10 +92,7 @@ const schema = new Schema({
         return hrDOM;
       },
     } as NodeSpec,
-
-    /// A heading textblock, with a `level` attribute that
-    /// should hold the number 1 to 6. Parsed and serialized as `<h1>` to
-    /// `<h6>` elements.
+    // 标题
     heading: {
       attrs: { level: { default: 1 } },
       content: 'inline*',
@@ -114,10 +110,7 @@ const schema = new Schema({
         return ['h' + node.attrs.level, 0];
       },
     } as NodeSpec,
-
-    /// A code listing. Disallows marks or non-text inline
-    /// nodes by default. Represented as a `<pre>` element with a
-    /// `<code>` element inside of it.
+    // 行内代码
     code_block: {
       content: 'text*',
       marks: '',
@@ -134,10 +127,7 @@ const schema = new Schema({
     text: {
       group: 'inline',
     } as NodeSpec,
-
-    /// An inline image (`<img>`) node. Supports `src`,
-    /// `alt`, and `href` attributes. The latter two default to the empty
-    /// string.
+    // 插入图片
     image: {
       inline: true,
       attrs: {
@@ -201,7 +191,8 @@ const schema = new Schema({
         },
       ],
     } as NodeSpec,
-    // TODO: 高亮块
+
+    // 高亮块
     highlightBlock: {
       content: 'block+',
       group: 'block',
@@ -212,12 +203,15 @@ const schema = new Schema({
         {
           class: 'highlight-block-container',
         },
+        0,
       ],
+
       toDOM: (node: any) => [
         'div',
         {
           class: 'highlight-block-container',
         },
+        0,
       ],
     } as NodeSpec,
   },
@@ -340,14 +334,14 @@ const insertHighlightBlock = (data: any) => {
   return (state: any, dispatch: any) => {
     const { $from, $to } = state.selection;
     const range = $from.blockRange($to);
-
     const wrapping =
       range && findWrapping(range, resultSchema.nodes.highlightBlock, null);
 
-    // FIXME: 缺少检查父级
+    // NOTE: 缺少检查父级
     // if (!$from.parent.canReplaceWith(index, index, resultSchema.nodes.highlightBlock))
     //   return false;
-    if (!wrapping && dispatch) {
+    if (!wrapping) {
+      console.groupCollapsed('run insert highlight block...');
       console.warn(
         'run highlight, but warpping is null: ',
         wrapping,
@@ -358,8 +352,6 @@ const insertHighlightBlock = (data: any) => {
       return false;
     }
     if (dispatch) {
-      console.groupCollapsed('run insert highlight block...');
-      // FIXME: 内部内容会被删除
       dispatch(state.tr.wrap(range, wrapping).scrollIntoView());
     }
     console.groupEnd();

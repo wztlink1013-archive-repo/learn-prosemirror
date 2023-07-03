@@ -86,3 +86,11 @@
   margin-top: 5px;
   display: none;
 }
+
+.highlight-block-container {
+  background: #fff7e6;
+  border: 1px solid #ffdfa3;
+  border-radius: 4px;
+  padding: 12px 12px;
+  margin: 2px;
+}
