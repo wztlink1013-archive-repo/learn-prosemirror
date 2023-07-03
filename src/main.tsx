@@ -1,16 +1,16 @@
+import './index.css';
+
+import { MenuItem } from 'prosemirror-menu';
+import { DOMParser, Schema } from 'prosemirror-model';
+import { DOMOutputSpec, MarkSpec, NodeSpec } from 'prosemirror-model';
+import { addListNodes } from 'prosemirror-schema-list';
+import { EditorState } from 'prosemirror-state';
+import { findWrapping } from 'prosemirror-transform';
+import { EditorView } from 'prosemirror-view';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import { exampleSetup, buildMenuItems } from './basic';
-import { DOMParser, Schema } from 'prosemirror-model';
-import { addListNodes } from 'prosemirror-schema-list';
-import { EditorState } from 'prosemirror-state';
-import { EditorView } from 'prosemirror-view';
-import { MenuItem } from 'prosemirror-menu';
-import { NodeSpec, MarkSpec, DOMOutputSpec } from 'prosemirror-model';
-import { findWrapping } from 'prosemirror-transform';
-
-import './index.css';
+import { buildMenuItems, exampleSetup } from './basic';
 
 ReactDOM.render(
   <React.StrictMode>
@@ -160,7 +160,7 @@ const schema = new Schema({
         },
       ],
       toDOM(node) {
-        let { src, alt, title } = node.attrs;
+        const { src, alt, title } = node.attrs;
         return ['img', { src, alt, title }];
       },
     } as NodeSpec,
@@ -186,7 +186,7 @@ const schema = new Schema({
         {
           tag: 'img[dino-type]',
           getAttrs: (dom: Element) => {
-            let type: string = dom.getAttribute('dino-type') || '';
+            const type: string = dom.getAttribute('dino-type') || '';
             return ['default-pic'].indexOf(type) > -1 ? { type } : false;
           },
         },
@@ -240,7 +240,7 @@ const schema = new Schema({
         },
       ],
       toDOM(node) {
-        let { href, title } = node.attrs;
+        const { href, title } = node.attrs;
         return ['a', { href, title }, 0];
       },
     } as MarkSpec,

@@ -1,49 +1,49 @@
 const prefix = 'ProseMirror-prompt';
 
 export function openPrompt(options: { title: any; fields: any; callback: any }) {
-  let wrapper = document.body.appendChild(document.createElement('div'));
+  const wrapper = document.body.appendChild(document.createElement('div'));
   wrapper.className = prefix;
 
   const mouseOutside: any = (e: { target: Node | null }) => {
     if (!wrapper.contains(e.target)) close();
   };
   setTimeout(() => window.addEventListener('mousedown', mouseOutside), 50);
-  let close = () => {
+  const close = () => {
     window.removeEventListener('mousedown', mouseOutside);
     if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
   };
 
-  let domFields: any[] = [];
-  for (let name in options.fields) domFields.push(options.fields[name].render());
+  const domFields: any[] = [];
+  for (const name in options.fields) domFields.push(options.fields[name].render());
 
-  let submitButton = document.createElement('button');
+  const submitButton = document.createElement('button');
   submitButton.type = 'submit';
   submitButton.className = prefix + '-submit';
   submitButton.textContent = 'OK';
-  let cancelButton = document.createElement('button');
+  const cancelButton = document.createElement('button');
   cancelButton.type = 'button';
   cancelButton.className = prefix + '-cancel';
   cancelButton.textContent = 'Cancel';
   cancelButton.addEventListener('click', close);
 
-  let form = wrapper.appendChild(document.createElement('form'));
+  const form = wrapper.appendChild(document.createElement('form'));
   if (options.title)
     form.appendChild(document.createElement('h5')).textContent = options.title;
   domFields.forEach((field) => {
     form.appendChild(document.createElement('div')).appendChild(field);
   });
-  let buttons = form.appendChild(document.createElement('div'));
+  const buttons = form.appendChild(document.createElement('div'));
   buttons.className = prefix + '-buttons';
   buttons.appendChild(submitButton);
   buttons.appendChild(document.createTextNode(' '));
   buttons.appendChild(cancelButton);
 
-  let box = wrapper.getBoundingClientRect();
+  const box = wrapper.getBoundingClientRect();
   wrapper.style.top = (window.innerHeight - box.height) / 2 + 'px';
   wrapper.style.left = (window.innerWidth - box.width) / 2 + 'px';
 
-  let submit = () => {
-    let params = getValues(options.fields, domFields);
+  const submit = () => {
+    const params = getValues(options.fields, domFields);
     if (params) {
       close();
       options.callback(params);
@@ -69,7 +69,7 @@ export function openPrompt(options: { title: any; fields: any; callback: any }) 
     }
   });
 
-  let input = form.elements[0];
+  const input = form.elements[0];
   // @ts-ignore
   if (input) input.focus();
 }
@@ -77,10 +77,10 @@ export function openPrompt(options: { title: any; fields: any; callback: any }) 
 function getValues(fields: { [x: string]: any }, domFields: any[]) {
   let result = Object.create(null),
     i = 0;
-  for (let name in fields) {
-    let field = fields[name],
+  for (const name in fields) {
+    const field = fields[name],
       dom = domFields[i++];
-    let value = field.read(dom),
+    const value = field.read(dom),
       bad = field.validate(value);
     if (bad) {
       reportInvalid(dom, bad);
@@ -96,8 +96,8 @@ function reportInvalid(
   message: any,
 ) {
   // FIXME this is awful and needs a lot more work
-  let parent = dom.parentNode;
-  let msg = parent.appendChild(document.createElement('div'));
+  const parent = dom.parentNode;
+  const msg = parent.appendChild(document.createElement('div'));
   msg.style.left = dom.offsetLeft + dom.offsetWidth + 2 + 'px';
   msg.style.top = dom.offsetTop - 5 + 'px';
   msg.className = 'ProseMirror-invalid';
@@ -142,7 +142,7 @@ export class Field {
 // ::- A field class for single-line text fields.
 export class TextField extends Field {
   render() {
-    let input = document.createElement('input');
+    const input = document.createElement('input');
     input.type = 'text';
     input.placeholder = this.options.label;
     input.value = this.options.value || '';
@@ -157,9 +157,9 @@ export class TextField extends Field {
 // `ProseMirror` instance and returning such an array.
 export class SelectField extends Field {
   render() {
-    let select = document.createElement('select');
+    const select = document.createElement('select');
     this.options.options.forEach((o: { value: string; label: string }) => {
-      let opt = select.appendChild(document.createElement('option'));
+      const opt = select.appendChild(document.createElement('option'));
       opt.value = o.value;
       opt.selected = o.value == this.options.value;
       opt.label = o.label;

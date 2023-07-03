@@ -1,29 +1,30 @@
+import { toggleMark } from 'prosemirror-commands';
 import {
-  wrapItem,
   blockTypeItem,
   Dropdown,
   DropdownSubmenu,
+  icons,
   joinUpItem,
   liftItem,
+  MenuItem,
+  redoItem,
   selectParentNodeItem,
   undoItem,
-  redoItem,
-  icons,
-  MenuItem,
+  wrapItem,
 } from 'prosemirror-menu';
-import { NodeSelection } from 'prosemirror-state';
-import { toggleMark } from 'prosemirror-commands';
-import { wrapInList } from 'prosemirror-schema-list';
-import { TextField, openPrompt } from './basic-prompt';
 import { Attrs, DOMParser, NodeType, Schema } from 'prosemirror-model';
+import { wrapInList } from 'prosemirror-schema-list';
+import { NodeSelection } from 'prosemirror-state';
 import { EditorState } from 'prosemirror-state';
+
+import { openPrompt, TextField } from './basic-prompt';
 
 // Helpers to create specific types of items
 
 function canInsert(state: EditorState, nodeType: NodeType) {
-  let $from = state.selection.$from;
+  const $from = state.selection.$from;
   for (let d = $from.depth; d >= 0; d--) {
-    let index = $from.index(d);
+    const index = $from.index(d);
     if ($from.node(d).canReplaceWith(index, index, nodeType)) return true;
   }
   return false;
@@ -70,12 +71,12 @@ function insertImageItem(nodeType: NodeType) {
 }
 
 function cmdItem(cmd: any, options: any) {
-  let passedOptions = {
+  const passedOptions = {
     label: options.title,
     run: cmd,
   };
   // @ts-ignore
-  for (let prop in options) passedOptions[prop] = options[prop];
+  for (const prop in options) passedOptions[prop] = options[prop];
   if ((!options.enable || options.enable === true) && !options.select)
     // @ts-ignore
     passedOptions[options.enable ? 'enable' : 'select'] = (state: EditorState) =>
@@ -85,20 +86,20 @@ function cmdItem(cmd: any, options: any) {
 }
 
 function markActive(state: EditorState, type: any) {
-  let { from, $from, to, empty } = state.selection;
+  const { from, $from, to, empty } = state.selection;
   if (empty) return type.isInSet(state.storedMarks || $from.marks());
   else return state.doc.rangeHasMark(from, to, type);
 }
 
 function markItem(markType: any, options: any) {
-  let passedOptions = {
+  const passedOptions = {
     active(state: EditorState) {
       return markActive(state, markType);
     },
     enable: true,
   };
   // @ts-ignore
-  for (let prop in options) passedOptions[prop] = options[prop];
+  for (const prop in options) passedOptions[prop] = options[prop];
   return cmdItem(toggleMark(markType), passedOptions);
 }
 
@@ -152,7 +153,7 @@ export function buildMenuItems(schema: Schema) {
     heading,
     horizontal_rule,
   } = nodes;
-  let r: {
+  const r: {
     toggleStrong: MenuItem;
     toggleEm: MenuItem;
     toggleCode: MenuItem;

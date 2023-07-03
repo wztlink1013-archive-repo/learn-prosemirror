@@ -1,44 +1,43 @@
-import { keymap } from 'prosemirror-keymap';
-import { history } from 'prosemirror-history';
 import { baseKeymap } from 'prosemirror-commands';
-import { Plugin } from 'prosemirror-state';
-import { dropCursor } from 'prosemirror-dropcursor';
-import { gapCursor } from 'prosemirror-gapcursor';
-import { menuBar } from 'prosemirror-menu';
 import {
-  inputRules,
-  wrappingInputRule,
-  textblockTypeInputRule,
-  smartQuotes,
-  emDash,
-  ellipsis,
-} from 'prosemirror-inputrules';
-import {
-  wrapIn,
-  setBlockType,
   chainCommands,
-  toggleMark,
   exitCode,
-  joinUp,
   joinDown,
+  joinUp,
   lift,
   selectParentNode,
+  setBlockType,
+  toggleMark,
+  wrapIn,
 } from 'prosemirror-commands';
+import { dropCursor } from 'prosemirror-dropcursor';
+import { gapCursor } from 'prosemirror-gapcursor';
+import { history } from 'prosemirror-history';
+import { redo, undo } from 'prosemirror-history';
 import {
-  wrapInList,
-  splitListItem,
+  ellipsis,
+  emDash,
+  inputRules,
+  smartQuotes,
+  textblockTypeInputRule,
+  wrappingInputRule,
+} from 'prosemirror-inputrules';
+import { undoInputRule } from 'prosemirror-inputrules';
+import { keymap } from 'prosemirror-keymap';
+import { menuBar } from 'prosemirror-menu';
+import { DOMParser, NodeType, Schema } from 'prosemirror-model';
+import {
   liftListItem,
   sinkListItem,
+  splitListItem,
+  wrapInList,
 } from 'prosemirror-schema-list';
-import { DOMParser, NodeType, Schema } from 'prosemirror-model';
-
-import { undo, redo } from 'prosemirror-history';
-import { undoInputRule } from 'prosemirror-inputrules';
+import { Plugin } from 'prosemirror-state';
 
 // @ts-ignore
 import { buildMenuItems } from './basic-toolbar';
 
-export { buildMenuItems, buildKeymap, buildInputRules };
+export { buildInputRules, buildKeymap, buildMenuItems };
 // 绑定输入特定键
 const buildInputRules = (schema: Schema) => {
   const blockQuoteRule = (nodeType: NodeType) => {
@@ -87,7 +86,7 @@ const buildKeymap = (schema: Schema, mapKeys: any) => {
     type;
   function bind(key: string, cmd: any) {
     if (mapKeys) {
-      let mapped = mapKeys[key];
+      const mapped = mapKeys[key];
       if (mapped === false) return;
       if (mapped) key = mapped;
     }
@@ -118,7 +117,7 @@ const buildKeymap = (schema: Schema, mapKeys: any) => {
   if ((type = schema.nodes.ordered_list)) bind('Shift-Ctrl-9', wrapInList(type));
   if ((type = schema.nodes.blockquote)) bind('Ctrl->', wrapIn(type));
   if ((type = schema.nodes.hard_break)) {
-    let br = type,
+    const br = type,
       cmd = chainCommands(exitCode, (state, dispatch) => {
         if (dispatch)
           dispatch(state.tr.replaceSelectionWith(br.create()).scrollIntoView());
@@ -139,7 +138,7 @@ const buildKeymap = (schema: Schema, mapKeys: any) => {
     for (let i = 1; i <= 6; i++)
       bind('Shift-Ctrl-' + i, setBlockType(type, { level: i }));
   if ((type = schema.nodes.horizontal_rule)) {
-    let hr = type;
+    const hr = type;
     bind('Mod-_', (state: any, dispatch: any) => {
       dispatch(state.tr.replaceSelectionWith(hr.create()).scrollIntoView());
       return true;
