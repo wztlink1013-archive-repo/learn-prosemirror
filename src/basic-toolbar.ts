@@ -250,10 +250,12 @@ export function buildMenuItems(schema: Schema) {
     blockMenu: [],
     fullMenu: [],
   };
+  r.inlineMenu = [cut([r.toggleStrong, r.toggleEm, r.toggleCode, r.toggleLink])];
 
   r.insertMenu = new Dropdown(cut([r.insertImage, r.insertHorizontalRule]), {
     label: 'Insert',
   });
+
   r.typeMenu = new Dropdown(
     cut([
       r.makeParagraph,
@@ -274,7 +276,6 @@ export function buildMenuItems(schema: Schema) {
     { label: 'Type...' },
   );
 
-  r.inlineMenu = [cut([r.toggleStrong, r.toggleEm, r.toggleCode, r.toggleLink])];
   r.blockMenu = [
     cut([
       r.wrapBulletList,
@@ -285,6 +286,7 @@ export function buildMenuItems(schema: Schema) {
       selectParentNodeItem,
     ]),
   ];
+
   r.fullMenu = r.inlineMenu.concat(
     [[r.insertMenu, r.typeMenu]],
     [[undoItem, redoItem]],

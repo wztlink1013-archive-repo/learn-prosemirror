@@ -4,12 +4,19 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 
 import { MenuItem } from 'prosemirror-menu';
-import { DOMParser, Schema } from 'prosemirror-model';
+import { DOMParser, Node, ResolvedPos, Schema } from 'prosemirror-model';
 import { DOMOutputSpec, MarkSpec, NodeSpec } from 'prosemirror-model';
 import { addListNodes } from 'prosemirror-schema-list';
 import { EditorState } from 'prosemirror-state';
-import { findWrapping } from 'prosemirror-transform';
+import { findWrapping, liftTarget } from 'prosemirror-transform';
 import { EditorView } from 'prosemirror-view';
+import {
+  lift,
+  joinUp,
+  selectParentNode,
+  wrapIn,
+  setBlockType,
+} from 'prosemirror-commands';
 
 import { buildMenuItems, exampleSetup } from './basic';
 
@@ -194,7 +201,8 @@ const schema = new Schema({
 
     // 高亮块
     highlightBlock: {
-      content: 'block+',
+      attrs: { color: { default: 'cyan' } },
+      content: 'block*',
       group: 'block',
       defining: true,
       draggable: true,
@@ -206,13 +214,28 @@ const schema = new Schema({
         0,
       ],
 
-      toDOM: (node: any) => [
-        'div',
-        {
-          class: 'highlight-block-container',
-        },
-        0,
-      ],
+      toDOM: (node: any) => {
+        return [
+          'div',
+          {
+            class: 'highlight-block-container',
+          },
+          [
+            'div',
+            {
+              class: 'highlight-block-emoji',
+            },
+          ],
+          [
+            'div',
+            {
+              class: 'highlight-block-content',
+              'data-color': node.attrs.color,
+            },
+            0,
+          ],
+        ];
+      },
     } as NodeSpec,
   },
   marks: {
@@ -296,81 +319,98 @@ const resultSchema = new Schema({
 // ======================================================== //
 // 工具栏
 const menu: any = buildMenuItems(resultSchema);
+
 // 【插入指定图片】
 const insertAssignImg = (type: string) => {
-  // debugger;
   return (state: any, dispatch: any) => {
     const { $from } = state.selection;
     const index = $from.index();
 
     if (!$from.parent.canReplaceWith(index, index, resultSchema.nodes.dino)) return false;
 
-    if (dispatch) {
-      console.groupCollapsed('run insert assign img');
-      console.log('type: ', type);
-      console.log('state: ', state);
-      console.log('selection info: ', $from, index);
-      console.log('tr: ', state.tr);
-      // debugger;
+    if (dispatch)
       dispatch(state.tr.replaceSelectionWith(resultSchema.nodes.dino.create({ type })));
-    }
-    console.groupEnd();
+
     return true;
   };
 };
-menu.insertMenu.content.push(
+// 【插入高亮块】
+const insertHighlightBlock = (attrs: any) => {
+  return (state: any, dispatch: any) => {
+    const { $from, $to } = state.selection;
+    const range = $from.blockRange($to);
+    const wrapping =
+      range && findWrapping(range, resultSchema.nodes.highlightBlock, attrs);
+
+    if (!wrapping) {
+      console.warn(
+        '[highlight] set highlight block, but warpping is null...',
+        range,
+        wrapping,
+      );
+      return false;
+    }
+    const { depth: fromDepth, path: fromPath, pos: fromPos } = $from;
+    const { depth: toDepth, path: toPath, pos: toPos } = $to;
+    const fromExistHigh = fromPath.find((_: Node | number) =>
+      typeof _ === 'number' ? false : _?.type?.name === 'highlightBlock',
+    );
+    const toExistHigh = toPath.find((_: Node | number) =>
+      typeof _ === 'number' ? false : _?.type?.name === 'highlightBlock',
+    );
+    // console.group('[highlight] set info...');
+    // console.log('state: ', state);
+    // console.log('$from: ', $from);
+    // console.log('$to: ', $to);
+    // console.log($from.sameParent($to));
+    // console.log('wrapping: ', wrapping);
+    // console.groupEnd();
+
+    if ($from.sameParent($to)) {
+      // range 处于同一父级块
+      if (fromExistHigh) {
+        console.warn('[highlight] highlight block does not allow nesting...');
+        return true;
+      }
+    } else if (fromExistHigh || toExistHigh) {
+      // TODO:
+      console.warn('[highlight] merge highlight blocks...');
+      // dispatch(state.tr.join(fromPos, 1));
+      return true;
+    }
+    if (dispatch) {
+      dispatch(state.tr.wrap(range, wrapping).scrollIntoView());
+    }
+    return true;
+  };
+};
+// 触发逻辑
+[
   new MenuItem({
     title: '插入指定图片',
-    label: 'insert assign image',
+    label: '插入指定图片',
     enable(state) {
       // @ts-ignore
       return insertAssignImg('default-pic')(state);
     },
     run: insertAssignImg('default-pic'),
   }),
-);
-// 【插入高亮块】
-const insertHighlightBlock = (data: any) => {
-  return (state: any, dispatch: any) => {
-    const { $from, $to } = state.selection;
-    const range = $from.blockRange($to);
-    const wrapping =
-      range && findWrapping(range, resultSchema.nodes.highlightBlock, null);
-
-    // NOTE: 缺少检查父级
-    // if (!$from.parent.canReplaceWith(index, index, resultSchema.nodes.highlightBlock))
-    //   return false;
-    if (!wrapping) {
-      console.groupCollapsed('run insert highlight block...');
-      console.warn(
-        'run highlight, but warpping is null: ',
-        wrapping,
-        state,
-        state.tr,
-        data,
-      );
-      return false;
-    }
-    if (dispatch) {
-      dispatch(state.tr.wrap(range, wrapping).scrollIntoView());
-    }
-    console.groupEnd();
-    return true;
-  };
-};
-menu.insertMenu.content.push(
   new MenuItem({
     title: '插入高亮块',
-    label: 'insert highlight block',
+    label: '插入高亮块',
     enable(state) {
       // @ts-ignore
-      // console.log(this);
       // return insertHighlightBlock('highlightBlock')(state, null);
       return true;
     },
-    run: insertHighlightBlock('highlightBlock'),
+    run: insertHighlightBlock({
+      color: 'yellow',
+    }),
   }),
-);
+].forEach((_) => {
+  menu.insertMenu.content.push(_);
+});
+
 // ======================================================== //
 //                      初始化编辑器                        //
 // ======================================================== //
@@ -384,4 +424,4 @@ window.view = new EditorView(document.querySelector('#editor'), {
 });
 
 // @ts-ignore
-console.log('[view instance]: ', window.view);
+// console.log('[view instance]: ', window.view);
