@@ -36,6 +36,7 @@ import { Plugin } from 'prosemirror-state';
 
 // @ts-ignore
 import { buildMenuItems } from './basic-toolbar';
+import { getRandomId } from './utils';
 
 export { buildInputRules, buildKeymap, buildMenuItems };
 // 绑定输入特定键
@@ -65,7 +66,7 @@ const buildInputRules = (schema: Schema) => {
     return textblockTypeInputRule(
       new RegExp('^(#{1,' + maxLevel + '})\\s$'),
       nodeType,
-      (match) => ({ level: match[1].length }),
+      (match) => ({ level: match[1].length, id: getRandomId() }),
     );
   };
   const rules = smartQuotes.concat(ellipsis, emDash);
@@ -136,7 +137,7 @@ const buildKeymap = (schema: Schema, mapKeys: any) => {
   if ((type = schema.nodes.code_block)) bind('Shift-Ctrl-\\', setBlockType(type));
   if ((type = schema.nodes.heading))
     for (let i = 1; i <= 6; i++)
-      bind('Shift-Ctrl-' + i, setBlockType(type, { level: i }));
+      bind('Shift-Ctrl-' + i, setBlockType(type, { level: i, id: getRandomId() }));
   if ((type = schema.nodes.horizontal_rule)) {
     const hr = type;
     bind('Mod-_', (state: any, dispatch: any) => {

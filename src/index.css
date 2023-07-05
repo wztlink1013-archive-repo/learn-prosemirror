@@ -88,8 +88,8 @@
 }
 
 .highlight-block-container {
-  background: #fff7e6;
-  border: 1px solid #ffdfa3;
+  border-width: 1px;
+  border-style: solid;
   border-radius: 4px;
   padding: 12px;
   margin: 2px;

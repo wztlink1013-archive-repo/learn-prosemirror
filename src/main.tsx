@@ -4,10 +4,17 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 
 import { MenuItem } from 'prosemirror-menu';
-import { DOMParser, Node, ResolvedPos, Schema } from 'prosemirror-model';
+import {
+  DOMParser,
+  Node,
+  ResolvedPos,
+  Schema,
+  Fragment,
+  NodeType,
+} from 'prosemirror-model';
 import { DOMOutputSpec, MarkSpec, NodeSpec } from 'prosemirror-model';
 import { addListNodes } from 'prosemirror-schema-list';
-import { EditorState } from 'prosemirror-state';
+import { EditorState, NodeSelection, Transaction } from 'prosemirror-state';
 import { findWrapping, liftTarget } from 'prosemirror-transform';
 import { EditorView } from 'prosemirror-view';
 import {
@@ -19,12 +26,20 @@ import {
 } from 'prosemirror-commands';
 
 import { buildMenuItems, exampleSetup } from './basic';
+import { getRandomId } from './utils';
+import { wordCountPlugin } from './plugin-word-count';
+
+declare global {
+  interface Window {
+    view: EditorView;
+  }
+}
 
 ReactDOM.render(
   <React.StrictMode>
     <div id="editor"></div>
     <div id="content" style={{ display: 'none' }}>
-      <h3>Hello ProseMirror</h3>
+      <h2>Hello ProseMirror</h2>
 
       <p>This is editable text. You can focus it and start typing.</p>
 
@@ -39,7 +54,7 @@ ReactDOM.render(
         />
         images.
       </p>
-
+      <h4>This Heading 4</h4>
       <p>
         Block-level structure can be manipulated with key bindings (try ctrl-shift-2 to
         create a level 2 heading, or enter in an empty textblock to exit the parent
@@ -64,15 +79,12 @@ const brDOM: DOMOutputSpec = ['br'];
 const emDOM: DOMOutputSpec = ['em', 0];
 const strongDOM: DOMOutputSpec = ['strong', 0];
 const codeDOM: DOMOutputSpec = ['code', 0];
+
 const schema = new Schema({
   nodes: {
-    /// NodeSpec The top level document node.
     doc: {
-      content: 'block+',
+      content: '(block | highlightBlock)+',
     } as NodeSpec,
-
-    /// A plain paragraph textblock. Represented in the DOM
-    /// as a `<p>` element.
     paragraph: {
       content: 'inline*',
       group: 'block',
@@ -101,20 +113,74 @@ const schema = new Schema({
     } as NodeSpec,
     // 标题
     heading: {
-      attrs: { level: { default: 1 } },
+      attrs: { level: { default: 1 }, id: { default: getRandomId() } },
       content: 'inline*',
       group: 'block',
       defining: true,
       parseDOM: [
-        { tag: 'h1', attrs: { level: 1 } },
-        { tag: 'h2', attrs: { level: 2 } },
-        { tag: 'h3', attrs: { level: 3 } },
-        { tag: 'h4', attrs: { level: 4 } },
-        { tag: 'h5', attrs: { level: 5 } },
-        { tag: 'h6', attrs: { level: 6 } },
+        {
+          tag: 'h1',
+          getAttrs(dom: HTMLElement) {
+            return {
+              level: 1,
+              id: dom.getAttribute('id') || getRandomId(),
+            };
+          },
+        },
+        {
+          tag: 'h2',
+          getAttrs(dom: HTMLElement) {
+            return {
+              level: 2,
+              id: dom.getAttribute('id') || getRandomId(),
+            };
+          },
+        },
+        {
+          tag: 'h3',
+          getAttrs(dom: HTMLElement) {
+            return {
+              level: 3,
+              id: dom.getAttribute('id') || getRandomId(),
+            };
+          },
+        },
+        {
+          tag: 'h4',
+          getAttrs(dom: HTMLElement) {
+            return {
+              level: 4,
+              id: dom.getAttribute('id') || getRandomId(),
+            };
+          },
+        },
+        {
+          tag: 'h5',
+          getAttrs(dom: HTMLElement) {
+            return {
+              level: 5,
+              id: dom.getAttribute('id') || getRandomId(),
+            };
+          },
+        },
+        {
+          tag: 'h6',
+          getAttrs(dom: HTMLElement) {
+            return {
+              level: 6,
+              id: dom.getAttribute('id') || getRandomId(),
+            };
+          },
+        },
       ],
       toDOM(node) {
-        return ['h' + node.attrs.level, 0];
+        return [
+          `h${node.attrs.level}`,
+          {
+            id: node.attrs.id,
+          },
+          0,
+        ];
       },
     } as NodeSpec,
     // 行内代码
@@ -129,8 +195,6 @@ const schema = new Schema({
         return preDOM;
       },
     } as NodeSpec,
-
-    /// The text node.
     text: {
       group: 'inline',
     } as NodeSpec,
@@ -161,8 +225,6 @@ const schema = new Schema({
         return ['img', { src, alt, title }];
       },
     } as NodeSpec,
-
-    /// A hard line break, represented in the DOM as `<br>`.
     hard_break: {
       inline: true,
       group: 'inline',
@@ -172,7 +234,6 @@ const schema = new Schema({
         return brDOM;
       },
     } as NodeSpec,
-
     // 自定义图片
     dino: {
       attrs: { type: { default: 'default-pic' } },
@@ -188,22 +249,26 @@ const schema = new Schema({
           },
         },
       ],
-      toDOM: (node: any) => [
-        'img',
-        {
-          'dino-type': node.attrs.type,
-          src: '/src/assets/test.jpg',
-          title: node.attrs.type,
-          class: `custom-schema-assign-pic`,
-        },
-      ],
+      toDOM: (node: any) => {
+        return [
+          'img',
+          {
+            'dino-type': node.attrs.type,
+            src: '/src/assets/test.jpg',
+            title: node.attrs.type,
+            class: `custom-schema-assign-pic`,
+          },
+        ];
+      },
     } as NodeSpec,
-
     // 高亮块
     highlightBlock: {
-      attrs: { color: { default: 'cyan' } },
+      attrs: {
+        backgroundColor: { default: '#fff7e6' },
+        borderColor: { default: '#ffdfa3' },
+      },
       content: 'block*',
-      group: 'block',
+      // group: 'doc', // 不设置保证是doc的一代子节点
       defining: true,
       draggable: true,
       parseDOM: [
@@ -215,10 +280,15 @@ const schema = new Schema({
       ],
 
       toDOM: (node: any) => {
+        const { attrs } = node;
+        const { backgroundColor, borderColor } = attrs;
         return [
           'div',
           {
             class: 'highlight-block-container',
+            'data-background-color': backgroundColor,
+            'data-border-color': borderColor,
+            style: `background-color: ${backgroundColor}; border-color: ${borderColor}`,
           },
           [
             'div',
@@ -230,7 +300,6 @@ const schema = new Schema({
             'div',
             {
               class: 'highlight-block-content',
-              'data-color': node.attrs.color,
             },
             0,
           ],
@@ -239,9 +308,6 @@ const schema = new Schema({
     } as NodeSpec,
   },
   marks: {
-    /// A link. Has `href` and `title` attributes. `title`
-    /// defaults to the empty string. Rendered and parsed as an `<a>`
-    /// element.
     link: {
       attrs: {
         href: {},
@@ -261,9 +327,6 @@ const schema = new Schema({
         return ['a', { href, title }, 0];
       },
     } as MarkSpec,
-
-    /// An emphasis mark. Rendered as an `<em>` element. Has parse rules
-    /// that also match `<i>` and `font-style: italic`.
     em: {
       parseDOM: [
         { tag: 'i' },
@@ -275,15 +338,9 @@ const schema = new Schema({
         return emDOM;
       },
     } as MarkSpec,
-
-    /// A strong mark. Rendered as `<strong>`, parse rules also match
-    /// `<b>` and `font-weight: bold`.
     strong: {
       parseDOM: [
         { tag: 'strong' },
-        // This works around a Google Docs misbehavior where
-        // pasted content will be inexplicably wrapped in `<b>`
-        // tags with a font-weight normal.
         {
           tag: 'b',
           getAttrs: (node: HTMLElement) => node.style.fontWeight != 'normal' && null,
@@ -298,8 +355,6 @@ const schema = new Schema({
         return strongDOM;
       },
     } as MarkSpec,
-
-    /// Code font mark. Represented as a `<code>` element.
     code: {
       parseDOM: [{ tag: 'code' }],
       toDOM() {
@@ -308,19 +363,16 @@ const schema = new Schema({
     } as MarkSpec,
   },
 });
-// 最终Schema
 const resultSchema = new Schema({
   // 监听list
   nodes: addListNodes(schema.spec.nodes, 'paragraph block*', 'block'),
   marks: schema.spec.marks,
 });
 // ======================================================== //
-//                     注册Schema逻辑                        //
+//                    注册Schema逻辑                        //
 // ======================================================== //
-// 工具栏
-const menu: any = buildMenuItems(resultSchema);
 
-// 【插入指定图片】
+// 插入指定图片
 const insertAssignImg = (type: string) => {
   return (state: any, dispatch: any) => {
     const { $from } = state.selection;
@@ -334,60 +386,28 @@ const insertAssignImg = (type: string) => {
     return true;
   };
 };
-// 【插入高亮块】
-const insertHighlightBlock = (attrs: any) => {
+
+// 插入高亮块
+const setHighlightBlock = (attrs?: any) => {
   return (state: any, dispatch: any) => {
-    const { $from, $to } = state.selection;
+    const { selection } = state;
+    const { $from, $to } = selection;
+
     const range = $from.blockRange($to);
-    const wrapping =
-      range && findWrapping(range, resultSchema.nodes.highlightBlock, attrs);
+    if (!range) return false;
 
-    if (!wrapping) {
-      console.warn(
-        '[highlight] set highlight block, but warpping is null...',
-        range,
-        wrapping,
-      );
-      return false;
-    }
-    const { depth: fromDepth, path: fromPath, pos: fromPos } = $from;
-    const { depth: toDepth, path: toPath, pos: toPos } = $to;
-    const fromExistHigh = fromPath.find((_: Node | number) =>
-      typeof _ === 'number' ? false : _?.type?.name === 'highlightBlock',
-    );
-    const toExistHigh = toPath.find((_: Node | number) =>
-      typeof _ === 'number' ? false : _?.type?.name === 'highlightBlock',
-    );
-    // console.group('[highlight] set info...');
-    // console.log('state: ', state);
-    // console.log('$from: ', $from);
-    // console.log('$to: ', $to);
-    // console.log($from.sameParent($to));
-    // console.log('wrapping: ', wrapping);
-    // console.groupEnd();
+    const wrapping = findWrapping(range, resultSchema.nodes.highlightBlock, attrs);
+    if (!wrapping) return false;
 
-    if ($from.sameParent($to)) {
-      // range 处于同一父级块
-      if (fromExistHigh) {
-        console.warn('[highlight] highlight block does not allow nesting...');
-        return true;
-      }
-    } else if (fromExistHigh || toExistHigh) {
-      // TODO:
-      console.warn('[highlight] merge highlight blocks...');
-      // dispatch(state.tr.join(fromPos, 1));
-      return true;
-    }
-    if (dispatch) {
-      dispatch(state.tr.wrap(range, wrapping).scrollIntoView());
-    }
+    if (dispatch) dispatch(state.tr.wrap(range, wrapping).scrollIntoView());
     return true;
   };
 };
-// 触发逻辑
+
+// 工具栏: 触发逻辑
+const menu: any = buildMenuItems(resultSchema);
 [
   new MenuItem({
-    title: '插入指定图片',
     label: '插入指定图片',
     enable(state) {
       // @ts-ignore
@@ -396,16 +416,8 @@ const insertHighlightBlock = (attrs: any) => {
     run: insertAssignImg('default-pic'),
   }),
   new MenuItem({
-    title: '插入高亮块',
     label: '插入高亮块',
-    enable(state) {
-      // @ts-ignore
-      // return insertHighlightBlock('highlightBlock')(state, null);
-      return true;
-    },
-    run: insertHighlightBlock({
-      color: 'yellow',
-    }),
+    run: setHighlightBlock(),
   }),
 ].forEach((_) => {
   menu.insertMenu.content.push(_);
@@ -414,14 +426,52 @@ const insertHighlightBlock = (attrs: any) => {
 // ======================================================== //
 //                      初始化编辑器                        //
 // ======================================================== //
-// @ts-ignore
-window.view = new EditorView(document.querySelector('#editor'), {
+// 更新目录视图
+const updateToc = (doc: any) => {
+  const gradeType: number[] = [];
+  const headingMatches: any[] = doc.content.content
+    .filter((_: Node) => {
+      const { textContent, type } = _;
+      const { name } = type;
+      return name === 'heading' && textContent;
+    })
+    .map((_: Node) => {
+      const { textContent, attrs } = _;
+      const { level, id } = attrs;
+      if (!gradeType.includes(level)) gradeType.push(level);
+      return {
+        textContent,
+        level,
+        id,
+      };
+    });
+  console.log('doc content change...', gradeType, headingMatches);
+};
+// 初始化编辑器
+const view: EditorView = new EditorView(document.querySelector('#editor'), {
   state: EditorState.create({
-    // @ts-ignore
-    doc: DOMParser.fromSchema(resultSchema).parse(document.querySelector('#content')),
-    plugins: exampleSetup({ schema: resultSchema, menuContent: menu.fullMenu }),
+    doc: DOMParser.fromSchema(resultSchema).parse(
+      document.querySelector('#content') as Element,
+    ),
+    plugins: [
+      ...exampleSetup({ schema: resultSchema, menuContent: menu.fullMenu }),
+      wordCountPlugin({ limit: 550, mode: 'textSize' }),
+    ],
   }),
+  // dispatchTransaction(transaction: Transaction) {
+  //   const { state, transactions } = view.state.applyTransaction(transaction);
+
+  //   view.updateState(state);
+
+  //   if (transactions.some((tr) => tr.docChanged)) {
+  //     const { doc } = state;
+  //     updateToc(doc);
+  //   }
+
+  //   // console.warn('_____________', view.composing);
+  //   // const newState = view.state.apply(transaction);
+  //   // view.updateState(newState);
+  // },
 });
 
-// @ts-ignore
-// console.log('[view instance]: ', window.view);
+window.view = view;

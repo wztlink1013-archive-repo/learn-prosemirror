@@ -18,6 +18,7 @@ import { NodeSelection } from 'prosemirror-state';
 import { EditorState } from 'prosemirror-state';
 
 import { openPrompt, TextField } from './basic-prompt';
+import { getRandomId } from './utils';
 
 // Helpers to create specific types of items
 
@@ -215,32 +216,32 @@ export function buildMenuItems(schema: Schema) {
     makeHead1: blockTypeItem(heading, {
       title: 'Change to heading 1',
       label: 'Level 1',
-      attrs: { level: 1 },
+      attrs: { level: 1, id: getRandomId() },
     }),
     makeHead2: blockTypeItem(heading, {
       title: 'Change to heading 2',
       label: 'Level 2',
-      attrs: { level: 2 },
+      attrs: { level: 2, id: getRandomId() },
     }),
     makeHead3: blockTypeItem(heading, {
       title: 'Change to heading 3',
       label: 'Level 3',
-      attrs: { level: 3 },
+      attrs: { level: 3, id: getRandomId() },
     }),
     makeHead4: blockTypeItem(heading, {
       title: 'Change to heading 4',
       label: 'Level 4',
-      attrs: { level: 4 },
+      attrs: { level: 4, id: getRandomId() },
     }),
     makeHead5: blockTypeItem(heading, {
       title: 'Change to heading 5',
       label: 'Level 5',
-      attrs: { level: 5 },
+      attrs: { level: 5, id: getRandomId() },
     }),
     makeHead6: blockTypeItem(heading, {
       title: 'Change to heading 6',
       label: 'Level 6',
-      attrs: { level: 6 },
+      attrs: { level: 6, id: getRandomId() },
     }),
     // @ts-ignore
     insertMenu: new Dropdown(),
