@@ -28,6 +28,7 @@ import {
 import { buildMenuItems, exampleSetup } from './basic';
 import { getRandomId } from './utils';
 import { wordCountPlugin } from './plugin-word-count';
+import { TocPlugin } from './plugin-toc';
 
 declare global {
   interface Window {
@@ -39,10 +40,11 @@ ReactDOM.render(
   <React.StrictMode>
     <div id="editor"></div>
     <div id="content" style={{ display: 'none' }}>
+      <h6>top line</h6>
       <h2>Hello ProseMirror</h2>
 
       <p>This is editable text. You can focus it and start typing.</p>
-
+      <h6>Hello ProseMirror</h6>
       <p>
         To apply styling, you can select a piece of text and manipulate its styling from
         the menu. The basic schema supports <em>emphasis</em>,{' '}
@@ -54,7 +56,9 @@ ReactDOM.render(
         />
         images.
       </p>
+      <h1>Hello ProseMirror</h1>
       <h4>This Heading 4</h4>
+      <h2>Hello ProseMirror</h2>
       <p>
         Block-level structure can be manipulated with key bindings (try ctrl-shift-2 to
         create a level 2 heading, or enter in an empty textblock to exit the parent
@@ -426,27 +430,6 @@ const menu: any = buildMenuItems(resultSchema);
 // ======================================================== //
 //                      初始化编辑器                        //
 // ======================================================== //
-// 更新目录视图
-const updateToc = (doc: any) => {
-  const gradeType: number[] = [];
-  const headingMatches: any[] = doc.content.content
-    .filter((_: Node) => {
-      const { textContent, type } = _;
-      const { name } = type;
-      return name === 'heading' && textContent;
-    })
-    .map((_: Node) => {
-      const { textContent, attrs } = _;
-      const { level, id } = attrs;
-      if (!gradeType.includes(level)) gradeType.push(level);
-      return {
-        textContent,
-        level,
-        id,
-      };
-    });
-  console.log('doc content change...', gradeType, headingMatches);
-};
 // 初始化编辑器
 const view: EditorView = new EditorView(document.querySelector('#editor'), {
   state: EditorState.create({
@@ -455,23 +438,10 @@ const view: EditorView = new EditorView(document.querySelector('#editor'), {
     ),
     plugins: [
       ...exampleSetup({ schema: resultSchema, menuContent: menu.fullMenu }),
-      wordCountPlugin({ limit: 550, mode: 'textSize' }),
+      wordCountPlugin({ limit: 600, mode: 'textSize' }),
+      // TocPlugin({ limit: 550, mode: 'textSize' }),
     ],
   }),
-  // dispatchTransaction(transaction: Transaction) {
-  //   const { state, transactions } = view.state.applyTransaction(transaction);
-
-  //   view.updateState(state);
-
-  //   if (transactions.some((tr) => tr.docChanged)) {
-  //     const { doc } = state;
-  //     updateToc(doc);
-  //   }
-
-  //   // console.warn('_____________', view.composing);
-  //   // const newState = view.state.apply(transaction);
-  //   // view.updateState(newState);
-  // },
 });
 
 window.view = view;

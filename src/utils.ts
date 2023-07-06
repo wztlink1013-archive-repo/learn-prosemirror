@@ -7,3 +7,17 @@ export const getRandomId = (num = 11) => {
   }
   return returnStr;
 };
+
+export const createElement = (
+  tag = 'div',
+  className?: string | string[],
+  innerHTML?: string,
+) => {
+  const domNode = document.createElement(tag);
+  if (className && typeof className === 'string') {
+    className = [className];
+  }
+  className && domNode.classList.add(...className);
+  innerHTML && (domNode.innerHTML = innerHTML);
+  return domNode;
+};

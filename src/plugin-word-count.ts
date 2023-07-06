@@ -105,7 +105,6 @@ export const wordCountPlugin = (options: WordCountOptions) => {
     filterTransaction: (transaction, state) => {
       const { limit } = plugin.options;
       // Nothing has changed or no limit is defined. Ignore it.
-      console.warn('----------filterTransaction', !transaction.docChanged || !limit);
       if (!transaction.docChanged || !limit) return true;
 
       return plugin.filterTransactionByLimit(transaction, state);
@@ -116,7 +115,7 @@ export const wordCountPlugin = (options: WordCountOptions) => {
        * @returns {Object}
        */
       init(config: EditorStateConfig, instance: EditorState) {
-        console.log('----------init', config, instance);
+        // console.log('init: ', plugin.calcStorage(instance.doc));
         return plugin.calcStorage(instance.doc);
       },
 
@@ -127,8 +126,11 @@ export const wordCountPlugin = (options: WordCountOptions) => {
        * @returns {Object}
        */
       apply(tr, prev) {
-        console.log('----------apply', tr, prev);
         const node = tr.doc;
+        // console.log('apply: ', prev, plugin.calcStorage(node), {
+        //   ...prev,
+        //   ...plugin.calcStorage(node),
+        // });
         return { ...prev, ...plugin.calcStorage(node) };
       },
     },
@@ -139,7 +141,6 @@ export const wordCountPlugin = (options: WordCountOptions) => {
        * @returns {?DecorationSet}
        */
       decorations(editorState) {
-        console.log('____________decorations', editorState);
         return DecorationSet.create(editorState.doc, [
           Decoration.widget(editorState.doc.content.size, () => {
             // @ts-ignore
